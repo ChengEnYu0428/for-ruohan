@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Will You Go Out With Me?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Pixelify+Sans:wght@500;700&family=Silkscreen:wght@400;700&family=VT323&display=swap">
+<style>
+  /* One deliberate look: a pink 8-bit love letter. Single theme on purpose. */
+  :root {
+    color-scheme: light;
+    --sky: #F59BC2;
+    --berry: #B0145C;
+    --ink: #560D35;
+    --hot: #E8468B;
+    --hot-dark: #A8104F;
+    --hot-light: #FF8EBC;
+    --cream: #FFF5FA;
+    --blush: #FFD4E6;
+    --mist: #FFE9F3;
+    --gold: #FFD65C;
+    --f-display: "Pixelify Sans", "DotGothic16", ui-monospace, "Courier New", monospace;
+    --f-ui: "Silkscreen", "DotGothic16", ui-monospace, "Courier New", monospace;
+    --f-body: "VT323", "DotGothic16", ui-monospace, "Courier New", monospace;
+    --px-border: 0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink);
+    --outline-cream: 3px 0 var(--cream), -3px 0 var(--cream), 0 3px var(--cream), 0 -3px var(--cream),
+                     3px 3px var(--cream), -3px 3px var(--cream), 3px -3px var(--cream), -3px -3px var(--cream);
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--sky);
+    color: var(--ink);
+    font-family: var(--f-body);
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  [hidden] { display: none !important; }
+
+  #bg, #fx {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  #bg { z-index: 0; }
+  #fx { z-index: 5; pointer-events: none; }
+
+  .stage {
+    position: relative; z-index: 2;
+    min-height: 100%;
+    box-sizing: border-box;
+    display: grid; place-items: center;
+    padding-inline: 16px;
+    padding-block: 64px 96px;
+  }
+  .step {
+    width: 100%; max-width: 480px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .step.enter { animation: pop .36s steps(4) both; }
+  @keyframes pop { from { transform: translateY(12px) scale(.96); } to { transform: none; } }
+
+  /* sticker frame that holds each sprite */
+  .frame {
+    position: relative;
+    width: 200px; height: 180px; max-width: 100%;
+    display: grid; place-items: center;
+    margin-bottom: 14px;
+    background-color: var(--blush);
+    background-image: conic-gradient(var(--mist) 25%, transparent 0 50%, var(--mist) 0 75%, transparent 0);
+    background-size: 16px 16px;
+    box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 8px var(--hot-light), var(--px-border), 0 12px 0 0 rgba(86, 13, 53, .28);
+  }
+  .frame canvas { display: block; max-width: 100%; height: auto; image-rendering: pixelated; animation: bob 1.2s steps(1) infinite; }
+  @keyframes bob { 50% { transform: translateY(-4px); } }
+  .frame::before, .frame::after {
+    content: "✦";
+    position: absolute;
+    color: var(--gold);
+    font: 700 22px/1 var(--f-ui);
+    text-shadow: 2px 2px 0 var(--ink);
+    animation: twinkle 1.4s steps(1) infinite;
+  }
+  .frame::before { top: 14px; left: 16px; }
+  .frame::after { right: 16px; bottom: 22px; animation-delay: .7s; }
+  @keyframes twinkle { 50% { opacity: .2; } }
+  .ribbon {
+    position: absolute; left: 50%; bottom: -14px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    padding: 5px 10px;
+    font: 700 11px/1 var(--f-ui);
+    letter-spacing: .06em;
+    color: #fff;
+    background: var(--hot);
+    box-shadow: var(--px-border);
+  }
+
+  /* type */
+  .h-name, .h-step, .h-yay {
+    margin: 0;
+    font-family: var(--f-display);
+    font-weight: 700;
+    color: var(--berry);
+    text-shadow: var(--outline-cream), 0 10px 0 rgba(86, 13, 53, .22);
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+  .h-name { font-size: clamp(54px, 16vw, 92px); line-height: 1.05; font-synthesis: none; }
+  .h-step { font-size: clamp(36px, 10vw, 58px); line-height: 1; letter-spacing: .02em; }
+  .h-step.long { font-size: clamp(28px, 7.6vw, 44px); line-height: 1.05; }
+  .h-yay { font-size: clamp(76px, 24vw, 132px); line-height: .9; }
+  [data-focus]:focus { outline: none; }
+  .ask {
+    margin: 0;
+    font: 700 clamp(14px, 4.2vw, 19px)/1.3 var(--f-ui);
+    color: var(--berry);
+    text-shadow: 2px 0 var(--cream), -2px 0 var(--cream), 0 2px var(--cream), 0 -2px var(--cream);
+  }
+  .lede {
+    margin: 0;
+    max-width: 30ch;
+    font: 400 clamp(23px, 6vw, 28px)/1.05 var(--f-body);
+    color: var(--ink);
+  }
+  .plate { background: var(--cream); padding: 4px 12px; box-shadow: var(--px-border); }
+
+  /* buttons */
+  .btn {
+    --b-bg: var(--hot); --b-fg: #fff; --b-shade: var(--hot-dark); --b-light: var(--hot-light);
+    border: 0; margin: 0;
+    padding: 12px 20px;
+    font: 700 18px/1.15 var(--f-ui);
+    letter-spacing: .04em;
+    color: var(--b-fg);
+    background: var(--b-bg);
+    box-shadow: var(--px-border), inset 0 -4px 0 0 var(--b-shade), inset 0 4px 0 0 var(--b-light), 0 10px 0 0 rgba(86, 13, 53, .3);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .btn:active:not(:disabled) { transform: translateY(4px); }
+  .btn:focus-visible, .opt:focus-visible, .link-btn:focus-visible, .sound:focus-visible, #date:focus-visible {
+    outline: 4px dashed #fff; outline-offset: 8px;
+  }
+  .btn:disabled { cursor: not-allowed; filter: saturate(.35); opacity: .7; }
+  .btn-yes { font-size: calc(18px * var(--grow, 1)); transition: font-size .24s steps(4); }
+  .btn-no {
+    --b-bg: #FFE3EE; --b-fg: var(--berry); --b-shade: #F5B5CF; --b-light: #fff;
+    font-size: 16px;
+    max-width: min(240px, calc(100vw - 48px));
+  }
+  .btn-no.loose { position: fixed; z-index: 6; }
+  .choices {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 22px 28px;
+    min-height: 84px;
+    margin-top: 8px;
+  }
+  .blink { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* date step */
+  .date-row { display: flex; flex-direction: column; align-items: center; gap: 26px; margin-top: 6px; }
+  #date {
+    box-sizing: border-box;
+    width: min(260px, 100%);
+    border: 0;
+    padding: 12px 14px;
+    font: 700 17px/1 var(--f-ui);
+    color: var(--ink);
+    background: #fff;
+    accent-color: var(--hot);
+    box-shadow: var(--px-border), inset 0 4px 0 0 var(--blush);
+  }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* activity step */
+  .opts {
+    width: 100%; max-width: 420px;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 20px;
+    margin-block: 6px 12px;
+  }
+  .opt {
+    border: 0;
+    padding: 13px 8px;
+    font: 700 13px/1.2 var(--f-ui);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--cream);
+    box-shadow: var(--px-border), inset 0 -4px 0 0 var(--blush);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .opt:hover { background: #fff; }
+  .opt[aria-pressed="true"] {
+    color: #fff;
+    background: var(--hot);
+    box-shadow: var(--px-border), inset 0 -4px 0 0 var(--hot-dark), inset 0 4px 0 0 var(--hot-light);
+  }
+  .opt[aria-pressed="true"]::before { content: "♥ "; }
+
+  /* final ticket */
+  .ticket {
+    box-sizing: border-box;
+    width: min(360px, 100%);
+    padding: 18px 22px 20px;
+    display: grid; gap: 12px;
+    text-align: left;
+    background: var(--cream);
+    box-shadow: var(--px-border), inset 0 -4px 0 0 var(--blush), 0 12px 0 0 rgba(86, 13, 53, .28);
+  }
+  .tk-head {
+    display: flex; justify-content: space-between; gap: 12px;
+    font: 700 12px/1 var(--f-ui);
+    letter-spacing: .12em;
+    color: var(--berry);
+  }
+  .tk-cut { height: 4px; background: repeating-linear-gradient(90deg, var(--hot-light) 0 8px, transparent 8px 16px); }
+  .ticket dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; align-items: baseline; }
+  .ticket dt { font: 700 11px/1 var(--f-ui); letter-spacing: .1em; color: var(--berry); }
+  .ticket dd { margin: 0; font: 400 29px/1 var(--f-body); color: var(--ink); overflow-wrap: anywhere; }
+  .hint {
+    margin: 6px 0 0;
+    padding: 4px 12px;
+    font: 400 22px/1.1 var(--f-body);
+    color: var(--ink);
+    background: var(--mist);
+    box-shadow: var(--px-border);
+  }
+  .link-btn {
+    border: 0; padding: 8px 10px;
+    font: 700 12px/1 var(--f-ui);
+    letter-spacing: .08em;
+    color: var(--ink);
+    background: transparent;
+    cursor: pointer;
+  }
+  .link-btn:hover { color: var(--berry); }
+
+  .sound {
+    position: fixed; z-index: 7;
+    top: calc(env(safe-area-inset-top, 0px) + 14px); right: 14px;
+    border: 0;
+    padding: 6px 9px;
+    font: 700 11px/1 var(--f-ui);
+    letter-spacing: .06em;
+    color: var(--ink);
+    background: var(--cream);
+    box-shadow: var(--px-border);
+    cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+<button id="sound" class="sound" type="button" aria-pressed="true">♪ ON</button>
+
+<main class="stage">
+  <section class="step" data-step="ask">
+    <div class="frame"><canvas id="spr-cat" aria-hidden="true"></canvas><span class="ribbon">♥ PLEASE PLEASE ♥</span></div>
+    <h1 class="h-name" tabindex="-1" data-focus><span id="who">若涵姐姐</span>,</h1>
+    <p class="ask" id="ask-q">will you go out with me?</p>
+    <div class="choices">
+      <button id="yes" class="btn btn-yes" type="button">YES ♥</button>
+      <button id="no" class="btn btn-no" type="button">No</button>
+    </div>
+  </section>
+
+  <section class="step" data-step="yay" hidden>
+    <div class="frame"><canvas id="spr-hug" aria-hidden="true"></canvas><span class="ribbon">♥ BEST DAY EVER ♥</span></div>
+    <h2 class="h-yay" tabindex="-1" data-focus>YAY!</h2>
+    <p class="lede">you just made my whole week</p>
+    <button id="yay-go" class="btn btn-yes" type="button">PRESS TO CONTINUE <span class="blink" aria-hidden="true">▶</span></button>
+  </section>
+
+  <section class="step" data-step="date" hidden>
+    <div class="frame"><canvas id="spr-cal" aria-hidden="true"></canvas></div>
+    <h2 class="h-step" tabindex="-1" data-focus>PICK A DATE</h2>
+    <p class="lede">choose a day and i'll plan the rest</p>
+    <div class="date-row">
+      <label class="sr" for="date">Date</label>
+      <input id="date" type="date">
+      <button id="date-go" class="btn btn-yes" type="button" disabled>CONTINUE ▶</button>
+    </div>
+  </section>
+
+  <section class="step" data-step="plan" hidden>
+    <div class="frame"><canvas id="spr-heart" aria-hidden="true"></canvas></div>
+    <h2 class="h-step long" tabindex="-1" data-focus>WHAT WOULD YOU LIKE TO DO?</h2>
+    <div id="opts" class="opts" role="group" aria-label="Date ideas"></div>
+    <button id="lock" class="btn btn-yes" type="button" disabled>LOCK IT IN ♥</button>
+  </section>
+
+  <section class="step" data-step="done" hidden>
+    <h2 class="h-step" tabindex="-1" data-focus>IT'S A DATE!</h2>
+    <p class="lede plate">see you then, <span id="who2">若涵姐姐</span> ♥</p>
+    <article class="ticket" aria-label="Date ticket">
+      <div class="tk-head"><span>♥ DATE TICKET</span><span>ADMIT 2</span></div>
+      <div class="tk-cut"></div>
+      <dl>
+        <dt>WHEN</dt><dd id="tk-when"></dd>
+        <dt>WHAT</dt><dd id="tk-what"></dd>
+        <dt>WHO</dt><dd id="tk-who"></dd>
+      </dl>
+    </article>
+    <p class="hint">screenshot this &amp; send it to me</p>
+    <button id="again" class="link-btn" type="button">↺ START OVER</button>
+  </section>
+</main>
+
+<script>
+/* ============ EDIT ME ============ */
+const CONFIG = {
+  name: "若涵姐姐",                      // who you're asking (a link ending in #name also works)
+  question: "will you go out with me?",
+  from: "",                             // your name for the ticket; leave blank for "you & me"
+  activities: ["Dinner date", "Movie night", "Coffee & a walk", "Picnic", "Mini golf", "Surprise me"],
+  noLines: ["No", "are you sure?", "really sure??", "think again!", "last chance!", "pretty please?",
+            "you're breaking my heart :(", "ok fine... YES ♥"],
+};
+/* ================================= */
+
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- tiny pixel-art engine ---------- */
+  const hexCache = new Map();
+  const rgb = (h) => {
+    let v = hexCache.get(h);
+    if (!v) { const n = parseInt(h.slice(1), 16); v = [(n >> 16) & 255, (n >> 8) & 255, n & 255]; hexCache.set(h, v); }
+    return v;
+  };
+  const Spr = (w, h) => { w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); return { w, h, p: new Array(w * h).fill(0) }; };
+  const put = (s, x, y, c) => { x = Math.floor(x); y = Math.floor(y); if (x >= 0 && y >= 0 && x < s.w && y < s.h) s.p[y * s.w + x] = c; };
+  const rect = (s, x, y, w, h, c) => {
+    x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h);
+    for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) put(s, i, j, c);
+  };
+  const ell = (s, cx, cy, rx, ry, c, test) => {
+    const x0 = Math.max(0, Math.floor(cx - rx)), x1 = Math.min(s.w - 1, Math.ceil(cx + rx));
+    const y0 = Math.max(0, Math.floor(cy - ry)), y1 = Math.min(s.h - 1, Math.ceil(cy + ry));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const dx = (x + .5 - cx) / rx, dy = (y + .5 - cy) / ry;
+      if (dx * dx + dy * dy <= 1 && (!test || test(x, y))) s.p[y * s.w + x] = c;
+    }
+  };
+  const tri = (s, ax, ay, bx, by, cx, cy, c) => {
+    const x0 = Math.floor(Math.min(ax, bx, cx)), x1 = Math.ceil(Math.max(ax, bx, cx));
+    const y0 = Math.floor(Math.min(ay, by, cy)), y1 = Math.ceil(Math.max(ay, by, cy));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const qx = x + .5, qy = y + .5;
+      const d1 = (qx - bx) * (ay - by) - (ax - bx) * (qy - by);
+      const d2 = (qx - cx) * (by - cy) - (bx - cx) * (qy - cy);
+      const d3 = (qx - ax) * (cy - ay) - (cx - ax) * (qy - ay);
+      const neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+      if (!(neg && pos)) put(s, x, y, c);
+    }
+  };
+  const outline = (s, c) => {
+    const q = s.p, w = s.w, h = s.h, out = q.slice();
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (q[i]) continue;
+      if ((x > 0 && q[i - 1]) || (x < w - 1 && q[i + 1]) || (y > 0 && q[i - w]) || (y < h - 1 && q[i + w])) out[i] = c;
+    }
+    s.p = out; return s;
+  };
+  const rim = (s, base, hi, edge) => {
+    const q = s.p.slice(), w = s.w;
+    for (let i = w; i < q.length; i++) if (q[i] === base && q[i - w] === edge) s.p[i] = hi;
+    return s;
+  };
+  const blit = (d, s, dx, dy) => {
+    dx = Math.round(dx); dy = Math.round(dy);
+    for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) { const c = s.p[y * s.w + x]; if (c) put(d, x + dx, y + dy, c); }
+    return d;
+  };
+  const toCanvas = (s, el) => {
+    const c = el || document.createElement("canvas");
+    c.width = s.w; c.height = s.h;
+    const ctx = c.getContext("2d"), img = ctx.createImageData(s.w, s.h);
+    for (let i = 0; i < s.p.length; i++) {
+      const col = s.p[i]; if (!col) continue;
+      const [r, g, b] = rgb(col);
+      img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  };
+  const rng = (seed) => () => {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  /* ---------- sprites ---------- */
+  const INK = "#560D35";
+  const BROWN = ["#B8784F", "#8C5434", "#EDCDA9", "#F28BB0"];
+  const WHITE = ["#FFFFFF", "#F6C9DB", "#FFF1F7", "#FF9EC4"];
+
+  const heartShape = (n, fill, hi, ink) => {
+    const s = Spr(n + 2, n + 2);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const X = ((x + .5) / n - .5) * 2.5, Y = -((y + .5) / n - .48) * 2.5;
+      const a = X * X + Y * Y - 1;
+      if (a * a * a - X * X * Y * Y * Y <= 0) s.p[(y + 1) * s.w + x + 1] = fill;
+    }
+    ell(s, 1 + n * .28, 1 + n * .3, Math.max(1, n * .09), Math.max(1, n * .12), hi, (x, y) => s.p[y * s.w + x] === fill);
+    return ink ? outline(s, ink) : s;
+  };
+
+  const cat = () => {
+    const W = "#FFFFFF", SH = "#F6D9E6", PK = "#FF9EC4", EAR = "#FFC2DA", TEAR = "#9FD8FF";
+    const s = Spr(34, 31);
+    tri(s, 5, 3, 4, 14, 14, 9, W); tri(s, 29, 3, 30, 14, 20, 9, W);
+    tri(s, 7, 6, 7, 12, 11, 10, EAR); tri(s, 27, 6, 27, 12, 23, 10, EAR);
+    ell(s, 17, 16, 13, 10.5, W);
+    for (let i = 0; i < s.p.length; i++) if (s.p[i] === W && i / s.w >= 24) s.p[i] = SH;
+    ell(s, 13.5, 26.5, 3, 2.5, W); ell(s, 20.5, 26.5, 3, 2.5, W);
+    rect(s, 10, 14, 4, 4, INK); rect(s, 20, 14, 4, 4, INK);
+    [[10, 14], [11, 14], [10, 15], [20, 14], [21, 14], [20, 15]].forEach(([x, y]) => put(s, x, y, W));
+    put(s, 13, 17, "#9B4A75"); put(s, 23, 17, "#9B4A75");
+    put(s, 11, 12, INK); put(s, 12, 11, INK); put(s, 22, 12, INK); put(s, 21, 11, INK);
+    [[9, 17], [9, 18], [24, 17], [24, 18]].forEach(([x, y]) => put(s, x, y, TEAR));
+    ell(s, 8, 19.5, 2.2, 1.3, PK); ell(s, 26, 19.5, 2.2, 1.3, PK);
+    [[14, 19], [16, 19], [17, 19], [19, 19], [15, 20], [18, 20]].forEach(([x, y]) => put(s, x, y, INK));
+    return outline(s, INK);
+  };
+
+  const bear = ([col, dark, snout, cheek]) => {
+    const s = Spr(24, 28);
+    ell(s, 4.5, 4.5, 3, 3, col); ell(s, 19.5, 4.5, 3, 3, col);
+    ell(s, 4.5, 4.5, 1.5, 1.5, dark); ell(s, 19.5, 4.5, 1.5, 1.5, dark);
+    ell(s, 12, 20, 8, 6.8, col);
+    ell(s, 12, 22, 4.5, 3.4, snout);
+    ell(s, 12, 11, 9, 7.5, col);
+    ell(s, 12, 14, 3.6, 2.6, snout);
+    rect(s, 8, 10, 1, 2, INK); rect(s, 15, 10, 1, 2, INK);
+    rect(s, 11, 13, 2, 1, INK);
+    put(s, 10, 14, INK); put(s, 11, 15, INK); put(s, 12, 15, INK); put(s, 13, 14, INK);
+    rect(s, 5, 13, 2, 1, cheek); rect(s, 17, 13, 2, 1, cheek);
+    return outline(s, INK);
+  };
+
+  const limb = (w, h, col) => { const s = Spr(w, h); ell(s, w / 2, h / 2, w / 2 - 1.1, h / 2 - .9, col); return outline(s, INK); };
+
+  const hug = () => {
+    const s = Spr(44, 34);
+    blit(s, bear(WHITE), 19, 6);
+    blit(s, bear(BROWN), 2, 6);
+    blit(s, limb(11, 6, WHITE[0]), 9, 24);
+    blit(s, limb(13, 7, BROWN[0]), 20, 23);
+    blit(s, heartShape(8, "#FF5C9D", "#FFD1E3", INK), 17, 0);
+    return s;
+  };
+
+  const bearWith = (kind) => {
+    const s = Spr(26, 30);
+    blit(s, bear(BROWN), 1, 2);
+    if (kind === "cal") {
+      const c = Spr(13, 13);
+      rect(c, 1, 2, 11, 10, "#FFFFFF");
+      rect(c, 1, 2, 11, 3, "#E8468B");
+      for (const gx of [3, 5, 7, 9]) for (const gy of [7, 9]) put(c, gx, gy, "#F7B6D0");
+      put(c, 3, 11, "#F7B6D0"); put(c, 5, 11, "#F7B6D0");
+      rect(c, 7, 10, 3, 2, "#E8468B");
+      outline(c, INK);
+      put(c, 4, 2, INK); put(c, 8, 2, INK);
+      blit(s, c, 7, 17);
+    } else {
+      blit(s, heartShape(12, "#FF5C9D", "#FFD1E3", INK), 6, 15);
+    }
+    const paw = limb(6, 6, BROWN[0]);
+    blit(s, paw, 4, 20); blit(s, paw, 16, 20);
+    return s;
+  };
+
+  const mount = (sel, s, k) => { const c = toCanvas(s, $(sel)); c.style.width = s.w * k + "px"; };
+  mount("#spr-cat", cat(), 5);
+  mount("#spr-hug", hug(), 4);
+  mount("#spr-cal", bearWith("cal"), 5);
+  mount("#spr-heart", bearWith("heart"), 5);
+
+  /* ---------- background world ---------- */
+  const bg = $("#bg"), bctx = bg.getContext("2d");
+  const fx = $("#fx"), fctx = fx.getContext("2d");
+  let W = 0, H = 0, px = 4, scene = "clouds", cache = {};
+  let puffs = [], sparks = [], floaters = [], petals = [], parts = [];
+
+  const skyFill = (s, cols, y0, y1) => {
+    const n = cols.length;
+    for (let y = Math.max(0, y0); y < Math.min(s.h, y1); y++) {
+      const t = (y - y0) / (y1 - y0) * n, i = Math.min(n - 1, Math.floor(t)), f = t - i;
+      for (let x = 0; x < s.w; x++) s.p[y * s.w + x] = (i < n - 1 && f > .8 && ((x + y) & 1)) ? cols[i + 1] : cols[i];
+    }
+  };
+
+  const bank = (top, col, edge, hi, r, rmin, rmax) => {
+    const s = Spr(W, H);
+    let x = -rmax;
+    while (x < W + rmax) {
+      const rad = rmin + r() * (rmax - rmin);
+      ell(s, x, top + rad * .9 + r() * rad * .5, rad * 1.3, rad, col);
+      x += rad * (1.1 + r() * .7);
+    }
+    rect(s, 0, top + rmin * 1.5, W, H, col);
+    outline(s, edge); rim(s, col, hi, edge);
+    return s;
+  };
+
+  const puffSprite = (rs, r) => {
+    const CL = "#FFE9F3", E = "#F8B4D1";
+    const w = Math.round((22 + r() * 14) * rs), h = Math.round(11 * rs), s = Spr(w + 2, h + 2);
+    ell(s, 1 + w * .3, 1 + h * .62, w * .22, h * .38, CL);
+    ell(s, 1 + w * .55, 1 + h * .45, w * .26, h * .45, CL);
+    ell(s, 1 + w * .78, 1 + h * .66, w * .18, h * .32, CL);
+    rect(s, 1 + w * .12, 1 + h * .62, w * .76, h * .38, CL);
+    outline(s, E); rim(s, CL, "#FFFFFF", E);
+    return toCanvas(s);
+  };
+
+  const buildClouds = () => {
+    const s = Spr(W, H), r = rng(11), rs = Math.max(1, Math.min(W, H) / 110);
+    skyFill(s, ["#FCD4E5", "#FAC2DA", "#F8B0CF", "#F59EC4", "#F28CB9", "#EE7BAF"], 0, H);
+    blit(s, bank(H * .68, "#FFC6DD", "#F493BF", "#FFDDEB", r, 7 * rs, 15 * rs), 0, 0);
+    blit(s, bank(H * .8, "#FFE8F2", "#F7A9CB", "#FFFFFF", r, 6 * rs, 12 * rs), 0, 0);
+    return s;
+  };
+
+  const building = (s, x, y, w, h, col, edge, win, r, density) => {
+    rect(s, x, y, w, h, col);
+    rect(s, x, y, w, 1, edge); rect(s, x + w - 1, y, 1, h, edge);
+    if (r() < .3) { const len = Math.round(2 + r() * 4); rect(s, x + Math.floor(w / 2), y - len, 1, len, edge); }
+    for (let wy = y + 2; wy < y + h - 1; wy += 3) for (let wx = x + 2; wx < x + w - 2; wx += 3) if (r() < density) put(s, wx, wy, win);
+  };
+
+  const tree = (s, cx, base, size, r) => {
+    const w = Math.round(size * 2.8), h = Math.round(size * 2.6), ox = Math.round(w / 2);
+    const TR = "#7C3454", P = "#FFA8CC", PS = "#F288BB";
+    const t = Spr(w, h), th = Math.round(size * .9), tw = Math.max(2, Math.round(size * .14));
+    rect(t, ox - tw / 2, h - th - 1, tw, th, TR);
+    for (let i = 0; i < size * .4; i++) {
+      put(t, ox - tw / 2 - i, h - th - 1 - i * .9, TR);
+      put(t, ox + tw / 2 + i - 1, h - th - 2 - i * .7, TR);
+    }
+    outline(t, "#4E1832");
+    const c = Spr(w, h), cy = h - th - size * .55;
+    ell(c, ox, cy, size * .95, size * .62, P);
+    for (let k = 0; k < 7; k++) {
+      const a = r() * Math.PI * 2;
+      ell(c, ox + Math.cos(a) * size * .75, cy + Math.sin(a) * size * .4, size * (.3 + r() * .2), size * (.26 + r() * .16), P);
+    }
+    for (let i = 0; i < c.p.length; i++) if (c.p[i] === P) {
+      const x = i % w, y = (i / w) | 0;
+      if ((x - ox) * .35 + (y - cy) > size * .22) c.p[i] = PS;
+    }
+    for (let k = 0; k < 4; k++) ell(c, ox - size * .4 + r() * size * .5, cy - size * .35 + r() * size * .25, size * .16, size * .11, "#FFD4E6", (x, y) => c.p[y * w + x] === P);
+    for (let k = 0; k < size * 2; k++) {
+      const i = ((r() * h) | 0) * w + ((r() * w) | 0);
+      if (c.p[i] === P) c.p[i] = "#FFC4DC"; else if (c.p[i] === PS) c.p[i] = P;
+    }
+    outline(c, "#C2508A");
+    blit(t, c, 0, 0);
+    blit(s, t, cx - ox, base - h + 1);
+  };
+
+  const buildCity = () => {
+    const s = Spr(W, H), r = rng(23), rs = Math.max(1, Math.min(W, H) / 110);
+    const hz = Math.round(H * .74);
+    skyFill(s, ["#FFE4EF", "#FFD5E6", "#FEC5DC", "#FCB4D2", "#FAA2C8"], 0, hz);
+    const big = heartShape(Math.round(16 * rs), "#FFF4F9", "#FFFFFF", "#FBB3D1");
+    blit(s, big, W * .5 - big.w / 2, H * .12 - big.h / 2);
+    blit(s, bank(H * .5, "#FFEDF5", "#FBC6DD", "#FFFFFF", r, 6 * rs, 12 * rs), 0, 0);
+    let x = -2;
+    while (x < W) {
+      const bw = Math.round((6 + r() * 10) * rs * .8) + 3, bh = Math.round(H * (.1 + r() * .16));
+      building(s, x, hz - bh, bw, bh, "#F1A3C7", "#E48FB9", "#FBCFE2", r, .5);
+      x += bw + (r() < .3 ? 1 : 0);
+    }
+    x = -4;
+    while (x < W) {
+      const bw = Math.round((9 + r() * 11) * rs * .8) + 3, bh = Math.round(H * (.05 + r() * .1));
+      building(s, x, hz + 3 - bh, bw, bh, "#E58BB6", "#D673A4", r() < .5 ? "#FFE6F1" : "#FBCFE2", r, .6);
+      x += bw + Math.round(r() * 6 * rs);
+    }
+    skyFill(s, ["#DE6FA5", "#D4659C", "#C95892"], hz + 3, H);
+    rect(s, 0, hz + 3, W, 1, "#F08DBD");
+    for (let k = 0; k < W * H / 140; k++) put(s, r() * W, hz + 5 + r() * (H - hz - 5), r() < .5 ? "#FFB8D5" : "#F39AC5");
+    const ts = Math.round(18 * rs);
+    [[.04, 1.1], [.17, .85], [.86, .95], [.98, 1.15]].forEach(([f, k]) => tree(s, W * f, hz + (H - hz) * .55 * k, Math.round(ts * k), r));
+    return s;
+  };
+
+  const heartSprites = [heartShape(5, "#FF6FA8", "#FFD1E3", "#B0145C"), heartShape(5, "#FFFFFF", "#FFE9F3", "#F493BF")].map((h) => toCanvas(h));
+
+  const initDyn = () => {
+    const r = rng(5), rs = Math.max(1, Math.min(W, H) / 110);
+    puffs = Array.from({ length: Math.max(2, Math.round(W / 90)) }, () => {
+      const c = puffSprite(rs, r);
+      return { c, x: r() * W, y: H * (.06 + r() * .42), v: 2 + r() * 3 };
+    });
+    sparks = Array.from({ length: Math.round(W * H / 2600) }, () => ({ x: (r() * W) | 0, y: (r() * H * .65) | 0, ph: r() * 6.28, sp: 1.5 + r() * 2 }));
+    floaters = Array.from({ length: Math.max(3, Math.round(W / 70)) }, () => ({ x: r() * W, y: r() * H, v: 5 + r() * 5, ph: r() * 6.28, k: r() < .6 ? 0 : 1 }));
+    petals = Array.from({ length: Math.round(W * H / 700) }, () => ({ x: r() * W, y: r() * H, vy: 7 + r() * 8, vx: -2 - r() * 4, ph: r() * 6.28, c: r() < .5 ? "#FFC1DA" : "#FF8FBF", big: r() < .4 }));
+  };
+
+  const resize = () => {
+    px = innerWidth < 600 ? 3 : 4;
+    W = Math.ceil(innerWidth / px); H = Math.ceil(innerHeight / px);
+    bg.width = fx.width = W; bg.height = fx.height = H;
+    cache = {};
+    initDyn();
+    render(0);
+  };
+
+  const sparkle = (x, y, ph) => {
+    const v = (Math.sin(ph) + 1) / 2;
+    if (v < .25) return;
+    bctx.fillStyle = "#FFFFFF";
+    bctx.fillRect(x, y, 1, 1);
+    if (v > .55) { bctx.fillRect(x - 1, y, 3, 1); bctx.fillRect(x, y - 1, 1, 3); }
+    if (v > .85) { bctx.fillStyle = "rgba(255,255,255,.6)"; bctx.fillRect(x - 2, y, 1, 1); bctx.fillRect(x + 2, y, 1, 1); bctx.fillRect(x, y - 2, 1, 1); bctx.fillRect(x, y + 2, 1, 1); }
+  };
+
+  const MINI = [".#.#.", "#####", ".###.", "..#.."];
+  const drawFx = () => {
+    fctx.clearRect(0, 0, W, H);
+    for (const p of parts) {
+      fctx.fillStyle = p.c;
+      const x = Math.round(p.x), y = Math.round(p.y);
+      if (p.k) { MINI.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === "#") fctx.fillRect(x + i, y + j, 1, 1); })); }
+      else fctx.fillRect(x, y, 2, 2);
+    }
+  };
+
+  function render(t) {
+    if (!cache[scene]) cache[scene] = toCanvas(scene === "city" ? buildCity() : buildClouds());
+    bctx.drawImage(cache[scene], 0, 0);
+    if (scene === "clouds") for (const p of puffs) bctx.drawImage(p.c, Math.round(p.x), Math.round(p.y));
+    for (const s of sparks) sparkle(s.x, s.y, s.ph + t * s.sp);
+    for (const f of floaters) bctx.drawImage(heartSprites[f.k], Math.round(f.x + Math.sin(t * 1.3 + f.ph) * 3), Math.round(f.y));
+    if (scene === "city") for (const p of petals) {
+      bctx.fillStyle = p.c;
+      bctx.fillRect(Math.round(p.x), Math.round(p.y), p.big ? 2 : 1, 1);
+    }
+  }
+
+  const update = (dt, t) => {
+    for (const p of puffs) { p.x += p.v * dt; if (p.x > W + 2) p.x = -p.c.width; }
+    for (const f of floaters) { f.y -= f.v * dt; if (f.y < -12) { f.y = H + 4 + Math.random() * 20; f.x = Math.random() * W; } }
+    if (scene === "city") for (const p of petals) {
+      p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 1.5 + p.ph) * 4) * dt;
+      if (p.y > H) { p.y = -2; p.x = Math.random() * W * 1.2; }
+      if (p.x < -3) p.x = W + 2;
+    }
+    for (const p of parts) { p.vy += 90 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+    parts = parts.filter((p) => p.life > 0 && p.y < H + 6);
+  };
+
+  let last = performance.now(), fxDirty = false;
+  const loop = (now) => {
+    requestAnimationFrame(loop);
+    const dt = (now - last) / 1000;
+    if (dt < 1 / 30) return;
+    last = now;
+    update(Math.min(dt, .1), now / 1000);
+    render(now / 1000);
+    if (parts.length || fxDirty) { drawFx(); fxDirty = parts.length > 0; }
+  };
+
+  const burst = (cx, cy, n) => {
+    if (calm) return;
+    const COLS = ["#FFFFFF", "#FF5C9D", "#B0145C", "#FFD65C", "#FFB3D1"];
+    const x = cx / px, y = cy / px;
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.3, sp = 40 + Math.random() * 70;
+      parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, c: COLS[i % COLS.length], k: Math.random() < .5, life: 2 + Math.random() });
+    }
+    fxDirty = true;
+  };
+
+  let resizeTimer = 0;
+  addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 150); });
+  resize();
+  if (!calm) requestAnimationFrame(loop);
+
+  /* ---------- sound ---------- */
+  let ac = null, soundOn = true;
+  try { soundOn = localStorage.getItem("dateInviteSound") !== "off"; } catch (e) {}
+  const soundBtn = $("#sound");
+  const paintSound = () => { soundBtn.textContent = soundOn ? "♪ ON" : "♪ OFF"; soundBtn.setAttribute("aria-pressed", String(soundOn)); };
+  paintSound();
+  soundBtn.addEventListener("click", () => {
+    soundOn = !soundOn; paintSound();
+    try { localStorage.setItem("dateInviteSound", soundOn ? "on" : "off"); } catch (e) {}
+    sfx("blip");
+  });
+  const tone = (f0, f1, start, dur, vol = .045) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(f0, start);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1, start + dur);
+    g.gain.setValueAtTime(vol, start);
+    g.gain.exponentialRampToValueAtTime(.0001, start + dur);
+    o.connect(g).connect(ac.destination);
+    o.start(start); o.stop(start + dur + .02);
+  };
+  function sfx(kind) {
+    if (!soundOn) return;
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === "suspended") ac.resume();
+      const t = ac.currentTime;
+      if (kind === "blip") tone(740, 0, t, .07);
+      else if (kind === "select") tone(988, 0, t, .06);
+      else if (kind === "dodge") tone(520, 180, t, .16);
+      else if (kind === "yay") [523, 659, 784, 1047].forEach((f, i) => tone(f, 0, t + i * .09, .12));
+      else if (kind === "lock") [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0, t + i * .08, .14));
+    } catch (e) {}
+  }
+
+  /* ---------- the story ---------- */
+  const readName = () => {
+    let n = CONFIG.name;
+    try {
+      const h = decodeURIComponent(location.hash.slice(1)).trim();
+      if (h) n = h;
+    } catch (e) {}
+    return n.slice(0, 24);
+  };
+  const who = readName();
+  $("#who").textContent = who;
+  $("#who2").textContent = who;
+  $("#ask-q").textContent = CONFIG.question;
+
+  const state = { date: "", plan: "", tries: 0, busy: false };
+  const go = (id) => {
+    document.querySelectorAll(".step").forEach((s) => {
+      const on = s.dataset.step === id;
+      s.hidden = !on;
+      s.classList.remove("enter");
+      if (on) { void s.offsetWidth; s.classList.add("enter"); }
+    });
+    scene = id === "done" ? "city" : "clouds";
+    if (calm) render(0);
+    window.scrollTo(0, 0);
+    const h = document.querySelector(`[data-step="${id}"] [data-focus]`);
+    if (h) h.focus({ preventScroll: true });
+  };
+
+  // step 1: yes / no
+  const yes = $("#yes"), no = $("#no");
+  const lines = CONFIG.noLines;
+  let lastDodge = 0;
+  const sayYes = (btn) => {
+    if (state.busy) return;
+    state.busy = true;
+    const r = btn.getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height / 2, 80);
+    sfx("yay");
+    setTimeout(() => { state.busy = false; go("yay"); }, calm ? 0 : 750);
+  };
+  const dodge = () => {
+    const now = performance.now();
+    if (no.dataset.yes || now - lastDodge < 220) return;
+    lastDodge = now;
+    state.tries = Math.min(state.tries + 1, lines.length - 1);
+    no.textContent = lines[state.tries];
+    yes.style.setProperty("--grow", String(Math.min(1 + state.tries * .2, 2.4)));
+    if (state.tries === lines.length - 1) {
+      // they ran out of ways to say no
+      no.dataset.yes = "1";
+      no.classList.remove("loose", "btn-no");
+      no.classList.add("btn-yes");
+      no.style.left = no.style.top = "";
+      sfx("select");
+      return;
+    }
+    sfx("dodge");
+    no.classList.add("loose");
+    const b = no.getBoundingClientRect(), y = yes.getBoundingClientRect();
+    const pad = 16, top = 64;
+    const maxX = Math.max(pad, innerWidth - b.width - pad), maxY = Math.max(top, innerHeight - b.height - pad);
+    let nx = pad, ny = top;
+    for (let i = 0; i < 30; i++) {
+      nx = pad + Math.random() * (maxX - pad);
+      ny = top + Math.random() * (maxY - top);
+      const hit = nx < y.right + 24 && nx + b.width > y.left - 24 && ny < y.bottom + 24 && ny + b.height > y.top - 24;
+      if (!hit) break;
+    }
+    no.style.left = Math.round(nx) + "px";
+    no.style.top = Math.round(ny) + "px";
+  };
+  yes.addEventListener("click", () => sayYes(yes));
+  no.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") dodge(); });
+  no.addEventListener("click", () => { if (no.dataset.yes) sayYes(no); else dodge(); });
+
+  // step 2
+  $("#yay-go").addEventListener("click", () => { sfx("blip"); go("date"); });
+
+  // step 3: date
+  const dateEl = $("#date"), dateGo = $("#date-go");
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  dateEl.min = iso(new Date());
+  const onDate = () => { state.date = dateEl.value; dateGo.disabled = !dateEl.value; };
+  dateEl.addEventListener("input", onDate);
+  dateEl.addEventListener("change", onDate);
+  dateGo.addEventListener("click", () => { if (!state.date) return; sfx("blip"); go("plan"); });
+
+  // step 4: activity
+  const opts = $("#opts"), lock = $("#lock");
+  CONFIG.activities.forEach((a, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.id = "opt-" + i;
+    b.textContent = a;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => {
+      state.plan = a;
+      opts.querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      lock.disabled = false;
+      sfx("select");
+    });
+    opts.append(b);
+  });
+
+  const fmtDate = (v) => {
+    const [y, m, d] = v.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  };
+  lock.addEventListener("click", () => {
+    if (!state.plan || state.busy) return;
+    state.busy = true;
+    $("#tk-when").textContent = fmtDate(state.date);
+    $("#tk-what").textContent = /surprise/i.test(state.plan) ? "a surprise (you'll see)" : state.plan.toLowerCase();
+    $("#tk-who").textContent = CONFIG.from ? `${who} & ${CONFIG.from}` : "you & me";
+    const r = lock.getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top, 60);
+    sfx("lock");
+    setTimeout(() => { state.busy = false; go("done"); burst(innerWidth / 2, innerHeight * .35, 90); }, calm ? 0 : 600);
+  });
+
+  // start over
+  $("#again").addEventListener("click", () => {
+    state.date = ""; state.plan = ""; state.tries = 0;
+    no.textContent = lines[0];
+    no.className = "btn btn-no";
+    no.style.left = no.style.top = "";
+    delete no.dataset.yes;
+    yes.style.removeProperty("--grow");
+    dateEl.value = ""; dateGo.disabled = true;
+    lock.disabled = true;
+    opts.querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", "false"));
+    sfx("blip");
+    go("ask");
+  });
+})();
+</script>
+
+</html>
